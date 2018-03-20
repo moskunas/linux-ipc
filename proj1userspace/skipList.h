@@ -17,17 +17,19 @@ Implementation for user-space skip list test implementation before porting into 
 typedef struct mailbox
 {
 
-	char **messages ;
-	struct node *ptr ;
-	
-} *temp , *frontTemp , *front , *back ; 
+	struct mailbox *next ;
+	const unsigned char *message ;
+
+} mailbox ;
 
 typedef struct slNode
 {
 
-	unsigned int slNodeID ;
-	struct slNode **forwardList ;
-	struct mailbox *head ;
+	unsigned int slNodeID ; 
+	unsigned int ownedBy ;
+	int protect ;
+	struct slNode **forwardList ; 
+	struct mailbox *head , *tail ; 
 
 } slNode ;
 
@@ -67,6 +69,7 @@ long slmbx_recv(unsigned int id , unsigned char *msg , unsigned int len) ;
 long slmbx_length(unsigned int id) ;
 
 
-void slmbx_dump() ;
+int slmbx_dump() ;
+
 
 #endif
