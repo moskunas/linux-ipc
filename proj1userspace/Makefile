@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -g
+CFLAGS = -g -Wall
 OBJECTS = skipList.o testDriver.o
 
 testDriver : $(OBJECTS)

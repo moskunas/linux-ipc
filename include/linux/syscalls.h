@@ -941,4 +941,14 @@ asmlinkage long sys_pkey_free(int pkey);
 asmlinkage long sys_statx(int dfd, const char __user *path, unsigned flags,
 			  unsigned mask, struct statx __user *buffer);
 
+asmlinkage long slmbx_init(unsigned int ptrs , unsigned int prob) ;
+asmlinkage long slmbx_shutdown(void) ;
+asmlinkage long slmbx_create(unsigned int id , int protected) ;
+asmlinkage long slmbx_destroy(unsigned int id) ;
+asmlinkage long slmbx_count(unsigned int id) ;
+asmlinkage long slmbx_send(unsigned int id , const unsigned char *msg , unsigned int len) ;
+asmlinkage long slmbx_recv(unsigned int id , unsigned char *msg , unsigned int len) ;
+asmlinkage long slmbx_length(unsigned int id) ;
+asmlinkage int slmbx_dump(void) ;
+
 #endif

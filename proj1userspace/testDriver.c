@@ -23,6 +23,8 @@ int main()
 	unsigned char *new ;
 	
 	printf("\nTesting call before mailbox has been init:\n") ;
+	slmbx_create(14 , 1) ;
+	slmbx_destroy(100) ;
 	slmbx_dump() ;
 	
 	printf("\nTesting shutdown before init:\n") ;
@@ -46,7 +48,8 @@ int main()
 	slmbx_send(420 , msg , 20) ;
 	
 	printf("\nTesting sending msgs (one being NULL):\n") ;
-	slmbx_send(14 , msg2 , 20) ;
+	
+	slmbx_send(14 , msg2 , 17) ;
 	slmbx_send(14 , msg3 , 20) ;
 	slmbx_send(14 , msg4 , 20) ;
 	slmbx_dump() ;
