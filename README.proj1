@@ -2,19 +2,27 @@ OVERVIEW OUTLINE OF REQUIREMENT IMPLEMENTATION:
 
 This will be a broad overview of how I implemented the requirements necessary for this project. The overall structure I went for to implement this structure was three structs (skipList, slNode, mailbox). The arching encapsulation of these structs is skipList > slNode > mailbox. It goes without saying that each of these structs have varying different members that connect them to each other / give them characteristics. There is one skipList that holds an arbitrary number of slNodes that are what will end up holding each respective node's mailbox. Each mailbox attached to each node can have an arbitrary number of messages linked off of it.
 
-As it was stated in the project description, this is effectively a 2D linked list(skip list with FIFO linked list attached to each node bottom). Also, we can assume that any state info that is provided within the kernel has appropriate locking to ensure their correctness. The following is a brief overview of each individual system call implementation:
+As it was stated in the project description, this is effectively a 2D linked list(skip list with FIFO linked list attached to each node bottom). 
+Also, we can assume that any state info that is provided within the kernel has appropriate locking to ensure their correctness. 
+The following is a brief overview of each individual system call implementation:
 
 ->	slmbx_init()
 
-If parameter checking is passed then space is allocated for a skipList struct and slNode struct that will represent the head of the skipList before anything mailboxes are eventually created. The head slNode of skipList is given an ID of KEY_MAX_RANGE to represent it being the head. All other member variables are then adjusted according to what the user specified they want. We also adjust a variable to let the other calls to check if the system has been initialized yet. 
+If parameter checking is passed then space is allocated for a skipList struct and slNode struct that will represent the head of the skipList before anything mailboxes are eventually created. 
+The head slNode of skipList is given an ID of KEY_MAX_RANGE to represent it being the head. 
+All other member variables are then adjusted according to what the user specified they want. 
+We also adjust a variable to let the other calls to check if the system has been initialized yet. 
 
 ->	slmbx_shutdown()
 
-If parameter checking is passed we loop through our skip list until we reach it's head(the end). While looping through we free up each mailbox if it exists then free the node that was holding that mailbox. We then adjust the variable that slmbx_init() changed so the other calls know that the system is not initialized anymore. 
+If parameter checking is passed we loop through our skip list until we reach it's head(the end). 
+While looping through we free up each mailbox if it exists then free the node that was holding that mailbox.
+We then adjust the variable that slmbx_init() changed so the other calls know that the system is not initialized anymore. 
 
 ->	slmbx_create()
 
-If parameter checking is passed we allocate space for a new node addition to the skip list and adjust it's values according to what the parameters say. We also create an empty mailbox attached to the bottom of the newly created node that will be used if any messages are sent to it in the future. 
+If parameter checking is passed we allocate space for a new node addition to the skip list and adjust it's values according to what the parameters say. 
+We also create an empty mailbox attached to the bottom of the newly created node that will be used if any messages are sent to it in the future. 
 
 ->	slmbx_destroy()
 
@@ -22,19 +30,27 @@ If parameter checking is passed and the node specified by ID exists we basically
 
 ->	slmbx_count()
 
-If parameter checking is passed and the node specified by ID exists we check if there are any messages present in the nodes mailbox. If there are messages present we just go through the messages like traversing a normal linked list while incrementing each time we move and aren't at the end (NULL). This count of messages is returned to whomever called it. 
+If parameter checking is passed and the node specified by ID exists we check if there are any messages present in the nodes mailbox. 
+If there are messages present we just go through the messages like traversing a normal linked list while incrementing each time we move and aren't at the end (NULL). 
+This count of messages is returned to whomever called it. 
 
 ->	slmbx_send()
 
-If parameter checking is passed and the node specified by ID exists allocate space for the message to exist in the mailbox and add the message to the linked list in a FIFO fashion. This sending requires taking the pointer from userspace memory and placing it into kernel space memory.
+If parameter checking is passed and the node specified by ID exists allocate space for the message to exist in the mailbox and add the message to the linked list in a FIFO fashion. 
+This sending requires taking the pointer from userspace memory and placing it into kernel space memory.
 
 ->	slmbx_recv()
 
-If parameter checking is passed and the node specified by ID exists AND there exists a message to be received then this system call proceeds. We have to retrieve and remove the first message in the linked list in a FIFO fashion. This receiving requires taking the pointer from kernel space memory and placing it into user space memory.
+If parameter checking is passed and the node specified by ID exists AND there exists a message to be received then this system call proceeds. 
+We have to retrieve and remove the first message in the linked list in a FIFO fashion. 
+This receiving requires taking the pointer from kernel space memory and placing it into user space memory.
 
 ->	slmbx_length()
 
-If parameter checking is passed and the node specified by ID exists AND there exists a message to be received then this system call proceeds. Since we can't depend on null terminators in our strings we can't use things like strlen() in the kernel to get the string length. So we had to create a member variable tied with our message that was established when slmbx_send() was called for the message we're on. We access that member variable of the predetermined message length and return that back to the user. 
+If parameter checking is passed and the node specified by ID exists AND there exists a message to be received then this system call proceeds. 
+Since we can't depend on null terminators in our strings we can't use things like strlen() in the kernel to get the string length. 
+So we had to create a member variable tied with our message that was established when slmbx_send() was called for the message we're on. 
+We access that member variable of the predetermined message length and return that back to the user. 
 
 REFERENCES (EXCLUDING PROJ1 DESC REFS):
 

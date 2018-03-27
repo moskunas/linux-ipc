@@ -96,80 +96,6 @@ unsigned int randomLevel(void)
 }
 
 
-/*
-Initializes the mailbox system, setting up the initial state of the skip list. Returns 0 on success, only root user allowed to call this function.
-*/
-asmlinkage long slmbx_init(unsigned int ptrs , unsigned int prob) 
-{
-	// Only root user is allowed to call this function:
-	if (get_current_user() -> uid.val != 0)
-	{
-		return -EPERM ;
-	}
-	
-	// Checking to make sure mailbox system hasn't already been init
-	if (initialized != 0)
-	{
-		return -EALREADY ;
-	}
-	
-	initialized = 1 ;
-
-	slNode *head ;
-	int j ;
-	
-	// Primary invalid input handling
-	// ptrs parameter must be non-zero
-	if (ptrs == 0)
-	{
-		return -EINVAL ;
-	}
-	
-	// Valid prob values are 2 , 4 , 8 , 16
-	else if (prob == 2 || prob == 4 || prob == 8 || prob == 16)
-	{
-		initList = kmalloc(sizeof(struct skipList) , GFP_KERNEL) ;
-		if  (!initList)
-		{
-			kfree(initList) ;
-			return -ENOMEM ;
-		}
-			
-		head = kmalloc(sizeof(struct slNode) , GFP_KERNEL) ;
-		if (!head)
-		{
-			kfree(head) ;
-			return -ENOMEM ;
-		}
-		
-		initList -> head = head ;
-
-		// Giving head key value greater than any legal id that can exist for a user (Ex: 2^32 - 1)
-		head -> slNodeID = KEY_MAX_RANGE ;
-			
-		head -> forwardList = kmalloc(sizeof(slNode*) * (ptrs + 1) , GFP_KERNEL) ;
-		if (!(head -> forwardList))
-		{
-			kfree(head -> forwardList) ;
-			return -ENOMEM ;
-		}
-
-		for (j = 0 ; j <= ptrs ; j++)
-		{
-			head -> forwardList[j] = initList -> head ;
-		}
-	
-		initList -> level = 1 ;	
-		initList -> maxLevel = ptrs ;
-		initList -> promoteProb = prob ;
-		
-		return 0 ;
-	}
-	
-	// User entered invalid prob value
-	return -EINVAL ;
-}
-
 // Useful for finding specific node
 slNode *searchNode(unsigned int id)
 {	
@@ -196,6 +122,7 @@ slNode *searchNode(unsigned int id)
 }
 
 
+// See if user is allowed to access requested mailbox
 int checkPermissions(slNode *checkNode)
 {
 	// Seeing if user has permission to send to requested mailbox
@@ -211,12 +138,103 @@ int checkPermissions(slNode *checkNode)
 
 
 /*
+Initializes the mailbox system, setting up the initial state of the skip list. Returns 0 on success, only root user allowed to call this function.
+*/
+asmlinkage long slmbx_init(unsigned int ptrs , unsigned int prob) 
+{
+	if (mutex_lock_interruptible(&slMutex) < 0)
+		 return -EINTR ;
+	
+	// Only root user is allowed to call this function:
+	if (get_current_user() -> uid.val != 0)
+	{
+		mutex_unlock(&slMutex) ;
+		return -EPERM ;
+	}
+	
+	// Checking to make sure mailbox system hasn't already been init
+	if (initialized != 0)
+	{
+		mutex_unlock(&slMutex) ;
+		return -EALREADY ;
+	}
+	
+	initialized = 1 ;
+
+	slNode *head ;
+	int j ;
+	
+	// Primary invalid input handling
+	// ptrs parameter must be non-zero
+	if (ptrs == 0)
+	{
+		mutex_unlock(&slMutex) ;
+		return -EINVAL ;
+	}
+	
+	// Valid prob values are 2 , 4 , 8 , 16
+	else if (prob == 2 || prob == 4 || prob == 8 || prob == 16)
+	{
+		initList = kmalloc(sizeof(struct skipList) , GFP_KERNEL) ;
+		if  (!initList)
+		{
+			kfree(initList) ;
+			mutex_unlock(&slMutex) ;
+			return -ENOMEM ;
+		}
+			
+		head = kmalloc(sizeof(struct slNode) , GFP_KERNEL) ;
+		if (!head)
+		{
+			kfree(head) ;
+			mutex_unlock(&slMutex) ;
+			return -ENOMEM ;
+		}
+		
+		initList -> head = head ;
+
+		// Giving head key value greater than any legal id that can exist for a user (Ex: 2^32 - 1)
+		head -> slNodeID = KEY_MAX_RANGE ;
+			
+		head -> forwardList = kmalloc(sizeof(slNode*) * (ptrs + 1) , GFP_KERNEL) ;
+		if (!(head -> forwardList))
+		{
+			kfree(head -> forwardList) ;
+			mutex_unlock(&slMutex) ;
+			return -ENOMEM ;
+		}
+
+		for (j = 0 ; j <= ptrs ; j++)
+		{
+			head -> forwardList[j] = initList -> head ;
+		}
+	
+		initList -> level = 1 ;	
+		initList -> maxLevel = ptrs ;
+		initList -> promoteProb = prob ;
+		
+		mutex_unlock(&slMutex) ;
+		return 0 ;
+	}
+	
+	mutex_unlock(&slMutex) ;
+	
+	// User entered invalid prob value
+	return -EINVAL ;
+}
+
+
+/*
 Shutdown the mailbox system, deleting all existing mailboxes and any messages cointained therein. Returns 0 on success, only root user allowed to call this function.
 */
 asmlinkage long slmbx_shutdown(void)
 {
+	if (mutex_lock_interruptible(&slMutex) < 0)
+		 return -EINTR ;
+		 
 	if (initialized == 0)
 	{
+		mutex_unlock(&slMutex) ;
 		return -ENODEV ;
 	}
 	
@@ -225,6 +243,7 @@ asmlinkage long slmbx_shutdown(void)
 	// Only root user is allowed to call this function:
 	if (get_current_user() -> uid.val != 0)
 	{
+		mutex_unlock(&slMutex) ;
 		return -EPERM ;
 	}
 
@@ -260,6 +279,7 @@ asmlinkage long slmbx_shutdown(void)
 	kfree(currNode) ;
 	kfree(initList) ;
 		
+	mutex_unlock(&slMutex) ;
 	return 0 ;
 }
 
@@ -360,8 +380,10 @@ asmlinkage long slmbx_create(unsigned int id , int protected)
 			newNode -> protect = 0 ;
 			newNode -> ownedBy = current -> pid ;
 		}
-		
-		newNode -> protect = 1 ;
+		else
+		{
+			newNode -> protect = 1 ;
+		}
 		
 		// New mailbox attached to new node that was created for user:		
 		// New mailbox attached, but it will be empty queue since no messages within!!

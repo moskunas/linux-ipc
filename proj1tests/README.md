@@ -1,8 +1,10 @@
-INSTRUCTIONS ON HOW TO RUN TEST PROGRAM:
+**INSTRUCTIONS ON HOW TO RUN TEST PROGRAM:**
 
-The test driver is just a single .c file named p1testDriver.c It tests the functionality of the required implementation as well as all of the various edge/error handling cases that are necessary for no crashes to occur in the kernel. The file is compiled with "make" and ran with "./p1testDriver".
+The test driver is just a single .c file named p1testDriver.c It tests the functionality of the required implementation as well as all of the various edge/error handling cases that are necessary for no crashes to occur in the kernel. The file is compiled with "make" and ran with "./p1testDriver". There are two other executables present in this directory (p1testDriver2 & p1testDriver3) that should not be ran. They are ran within p1testDriver with forks to test mailbox protection cases that you will see displayed so they need not be ran themselves. 
 
-GENERAL STRATEGY FOR TESTING THE SYSTEM CALLS:
+slmbx_init() and slmbx_shutdown() are in the same file as all my syscall testing so if you run p1testDriver while not root all the calls will just give the correct output of permission denied/no device exists. To see the test cases displayed you will of course have to run p1testDriver as root. 
+
+**GENERAL STRATEGY FOR TESTING THE SYSTEM CALLS:**
 
 The testing cases below include cases where there should be no error output (required functionality just being used normally) and intentional action to make sure program gives error outputs gracefully and doesnt crash the rest of the program execution. What is being tested for will be stated in userspace for each testing case segment before its tested. It will be visibly clear/stated if an error should be showing up or not. Brief expansion on the tests present in the driver are below:
 
@@ -21,3 +23,5 @@ The testing cases below include cases where there should be no error output (req
 7. Called the system calls that return values to userspace to assure that they return the expected value given the current state of the mailbox system. 
 
 8. Called slmbx_send() with len values that are too large to be handled in kernel space. This will make it fail so assure that the system call handles that situation and fails gracefully, not crashing the kernel.
+
+9. Called all sytem calls from outside processes to test mailbox protection settings from outside process access. 

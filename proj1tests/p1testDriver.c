@@ -11,6 +11,7 @@ Adequately testing my kernel changes to ensure they work under all situations (i
 #include <stdlib.h>
 #include <errno.h>
 #include <stdio.h>
+#include <sys/wait.h>
 #include <unistd.h>
 #include <string.h>
 #include <linux/kernel.h>
@@ -88,6 +89,8 @@ int main(int argc , char *argv[])
 	unsigned char *receiving = (unsigned char *) malloc(sizeof(unsigned char));
 	unsigned char *receiving2 = (unsigned char *) malloc(sizeof(unsigned char));
 	unsigned char *receivingNULL = NULL ;
+	pid_t pid , waitpid ;
+	char *argv_list[] = {"./p1testDriver2" , "./p1testDriver3" , NULL} ;
 	
 	printf("\n|----- PROJ1 TEST DRIVER ------|\n") ;		
 
@@ -118,7 +121,7 @@ int main(int argc , char *argv[])
 	printf("----------------\n") ;
 
 	// Testing doing all possible legal modifications to the mbxs, shouldn't error
-	printf("\nTesting all legal syscall operations, should be 0 errors:\n----------------\n") ;	
+	printf("\nTesting all legal syscall operations, 0 errors:\n----------------\n") ;	
 
 
 	if (initSys(9 , 4) < 0)
@@ -193,10 +196,11 @@ int main(int argc , char *argv[])
 
 	printf("----------------\n") ;
 
-	printf("\nTesting handling of large len values(WIP):\n----------------\n") ;
+	printf("\nTesting handling of large len values:\n----------------\n") ;
 	
 	if (sendSys(478 , msg , 67108864) < 0)
-		printf("slmbx_send() with len value too large: %s\n" , strerror(errno)) ;
+		printf("slmbx_send() (userspace to kernel) with len value too large: %s\n" , 
+			strerror(errno)) ;
 	
 	printf("----------------\n") ;
 
@@ -224,8 +228,51 @@ int main(int argc , char *argv[])
 	printf("slmbx_recv() call should return 9: %ld\n" , recvSys(102 , receiving , 9));
 	
 	printf("----------------\n") ;
-		
-	dumpSys() ; // Display changes in dmesg for visual validation if wanted
+	
+	dumpSys() ; // Display changes inn dmesg for visual validation if wanted	
+	
+	printf("\nTesting calls on protected mailbox from diff process:\n----------------\n") ;
+	
+	pid = fork() ;
+	if (pid == 0)
+	{
+		// Child
+		execv("./p1testDriver2" , argv_list) ;
+		printf("ERROR: Can't execute execv() command...\n") ;
+		exit(1) ;
+	}
+	else if(pid < 0)
+	{
+		printf("ERROR: fork() failed...\n") ;
+	}
+	else
+	{
+		wait(NULL) ;
+	}
+	
+	
+	printf("----------------\n") ;
+
+	printf("\nTesting calls on unprotected mailbox from diff process, 0 errors:\n----------------\n") ;
+	
+	pid = fork() ;
+	if (pid == 0)
+	{
+		// Child
+		execv("./p1testDriver3" , argv_list) ;
+		printf("ERROR: Can't execute execv() command...\n") ;
+		exit(1) ;
+	}
+	else if(pid < 0)
+	{
+		printf("ERROR: fork() failed...\n") ;
+	}
+	else
+	{
+		wait(NULL) ;
+	}
+	
+	printf("----------------\n") ;		
 	
 	shutdownSys() ;
 		
