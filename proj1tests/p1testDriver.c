@@ -8,6 +8,7 @@ Started 3.22.2018
 Adequately testing my kernel changes to ensure they work under all situations (including error/edge cases).
 */
 
+#include <stdint.h>
 #include <stdlib.h>
 #include <errno.h>
 #include <stdio.h>
@@ -145,7 +146,7 @@ int main(int argc , char *argv[])
 
 	if (recvSys(478 , receiving , 9) < 0)
 		printf("RECV SHOULDN'T ERROR: %s\n" , strerror(errno)) ;
-
+				
 
 	if (createSys(1281 , 1) < 0)
 		printf("CREATE SHOULDN'T ERROR: %s\n" , strerror(errno)) ;

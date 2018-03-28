@@ -766,7 +766,7 @@ asmlinkage int slmbx_dump(void)
 
 	while (dumpNode && dumpNode -> forwardList[1] != initList -> head)
 	{
-		printk("slNodeID -> [%d] " , dumpNode -> forwardList[1] -> slNodeID) ;		
+		printk("slNodeID -> [%u] " , dumpNode -> forwardList[1] -> slNodeID) ;		
 
 		if (dumpNode -> forwardList[1] -> head == NULL)
 		{
